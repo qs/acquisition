@@ -31,10 +31,6 @@ SGDClassifier(alpha=0.0001, class_weight=None, epsilon=0.1, eta0=0.0,
         verbose=0, warm_start=False)
 '''
 
-for i in range(30):
-    index = randint(0, len(result))
-    print(clf.predict([ train_data[index] ])), result[index]
-
 match = 0.0
 for i in range(len(result)):
     if clf.predict([ train_data[i] ]) == result[i]:
