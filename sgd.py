@@ -1,5 +1,5 @@
 import numpy as np
-from sklearn import linear_model
+from sklearn import linear_model, cross_validation
 import csv
 from decimal import Decimal
 from random import randint
@@ -31,9 +31,5 @@ SGDClassifier(alpha=0.0001, class_weight=None, epsilon=0.1, eta0=0.0,
         verbose=0, warm_start=False)
 '''
 
-match = 0.0
-for i in range(len(result)):
-    if clf.predict([ train_data[i] ]) == result[i]:
-        match += 1
-
-print match, len(result), match / len(result)
+scores = cross_validation.cross_val_score(clf, X, Y, cv=20)
+print("Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
