@@ -4,6 +4,7 @@ import csv
 from decimal import Decimal
 from random import randint
 from collections import Counter
+from sklearn import metrics
 
 
 def read_data():
@@ -34,8 +35,27 @@ Y = np.array(result)
 clf = linear_model.SGDClassifier()
 clf.fit(X, Y)
 
-scores = cross_validation.cross_val_score(clf, X, Y, cv=20)
-print("Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
+pred = np.array([])
+for x in X:
+    pred = np.append(pred, x[0])
+
+fpr, tpr, thresholds = metrics.roc_curve(Y, pred)
+
+print metrics.auc(fpr, tpr)
+
+y_bin = np.array([bool(i) for i in Y])
+p_bin = np.array([bool(i) for i in pred])
+
+print metrics.precision_score(y_bin, p_bin)
+print metrics.recall_score(y_bin, p_bin)
+
+#print metrics.precision_score(y_bin, p_bin, average='micro')
+#print metrics.precision_score(y_bin, p_bin, average='weighted')
+
+#scores = cross_validation.cross_val_score(clf, X, Y, cv=20)
+#print("Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
+
+exit()
 
 clfs = {}
 scores = {}
