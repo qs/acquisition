@@ -2,35 +2,45 @@ import numpy as np
 from sklearn import linear_model, cross_validation
 import csv
 from decimal import Decimal
-from random import randint
+from datetime import datetime
 from collections import Counter
 from sklearn import metrics
 
 
-def read_data():
-    train_data = []
-    result = []
-    cats = {}
+def load_data():
+    lst_fin_names = ['Cash and cash equivalents', 'Inventories', 'Total Current Assets', 'Total Current Liabilities', 'Total Assets', 'Property, Plant and Equipment, Net', 'Goodwill', 'Short-Term Debt', 'Long-Term Debt', 'Net Debt', 'Total Liabilities', 'Depreciation  and amortization', 'CAPEX', 'Net Sales', 'Gross Margin', 'EBITDA', 'Dividend yield', 'Market Capitalization', 'Gross Income', 'Financial Costs', 'Net Income', 'Book Value', 'Free Cash Flow']
+    lst_names = ["%s %s" % (f, y) for f in lst_fin_names for y in range(1994, 2015)]
+    result_data = []
     with open('Train_contest.csv', 'r') as file:
         for row in csv.reader(file):
             data = row[0].split("; ")
-            result_row = int(data[-2])
-            result.append(result_row)
-            data_row = [float(0 if i == 'NaN' else i) for i in data[:-3]]
-            train_data.append(data_row)
-            cat_name = data[-3]
-            if cat_name in cats:
-                cats[cat_name]['data'].append(data_row)
-                cats[cat_name]['result'].append(result_row)
-            else:
-                cats[cat_name] = {'data': [data_row, ], 'result': [result_row, ]}
-    return train_data, result, cats
+            data_row = dict(zip(lst_names, [Decimal(i) for i in data[:-3]]))
+            data_row['Sector'] = data[-3]
+            data_row['Result'] = bool(int(data[-2]))
+            data_row['Result date'] = datetime.strptime(data[-1], "%d.%m.%Y") if data_row['Result'] else None
+            # calculated values
+            for y in range(1994, 2015):
+                data_row['EV %s' % y] = data_row['Market Capitalization %s' % y] + data_row['Net Debt %s' % y]
+                data_row['EV / EBITDA %s' % y] = data_row['EV %s' % y] / data_row['EBITDA %s' % y]
+                data_row['EV / Sales %s' % y] = data_row['EV %s' % y] / data_row['Net Sales %s' % y]
+                data_row['Net Debt / EBITDA %s' % y] = data_row['Net Debt %s' % y] / data_row['EBITDA %s' % y]
+                data_row['CAPEX / Net Sales %s' % y] = data_row['CAPEX %s' % y] / data_row['Net Sales %s' % y]
+                data_row['Interest Coverage ratio %s' % y] = data_row['Financial Costs %s' % y] / (data_row['EBITDA %s' % y] - data_row['Depreciation  and amortization %s' % y])
+                data_row['Debt / Equity %s' % y] = (data_row['Net Debt %s' % y] + data_row['Cash and cash equivalents %s' % y]) / (data_row['Total Assets %s' % y] - data_row['Total Liabilities %s' % y])
+                data_row['Total Current Assets / Total Assets %s' % y] = data_row['Total Current Assets %s' % y] / data_row['Total Assets %s' % y]
+            result_data.append(data_row)
+    return result_data
 
+exit()
 
 train_data, result, cats = read_data()
 
 X = np.array(train_data)
 Y = np.array(result)
+
+cntr = Counter(result)
+print cntr
+exit()
 
 clf = linear_model.SGDClassifier()
 clf.fit(X, Y)
