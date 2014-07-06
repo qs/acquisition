@@ -56,7 +56,7 @@ Y = np.array([i['Result'] for i in data])
 
 # classifier
 build_classifier(linear_model.SGDClassifier(), X, Y)
-build_classifier(linear_model.Lasso(), X, Y)
-build_classifier(linear_model.Ridge(), X, Y)
-build_classifier(linear_model.LassoLars(), X, Y)
-build_classifier(linear_model.BayesianRidge(), X, Y)
+#build_classifier(linear_model.Lasso(), X, Y)
+#build_classifier(linear_model.Ridge(), X, Y)
+#build_classifier(linear_model.LassoLars(), X, Y)
+#build_classifier(linear_model.BayesianRidge(), X, Y)
