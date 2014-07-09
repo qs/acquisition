@@ -1,34 +1,34 @@
 ### SGDClassifier
- * auc:  0.777099138485
- * precision:  0.422287390029
- * recall:  0.642857142857
+ * auc:  0.672532394817
+ * precision:  0.390243902439
+ * recall:  0.421052631579
 
 ### KNeighborsClassifier
- * auc:  0.758928571429
- * precision:  1.0
- * recall:  0.517857142857
+ * auc:  0.637398016317
+ * precision:  0.954545454545
+ * recall:  0.276315789474
 
-### SVC kernel="linear", C=0.025
- * auc:  0.997767857143
- * precision:  1.0
- * recall:  0.995535714286
-
-### SVC gamma=2, C=1
- * auc:  0.997767857143
- * precision:  1.0
- * recall:  0.995535714286
+### SVC
+ * auc:  0.886878099504
+ * precision:  0.7625
+ * recall:  0.802631578947
 
 ### DecisionTreeClassifier
- * auc:  0.94307131606
- * precision:  0.975490196078
- * recall:  0.888392857143
+ * auc:  0.898776195809
+ * precision:  0.837837837838
+ * recall:  0.815789473684
+
+### RandomForestClassifier
+ * auc:  0.506578947368
+ * precision:  1.0
+ * recall:  0.0131578947368
 
 ### AdaBoostClassifier
- * auc:  0.999549954995
- * precision:  0.991150442478
- * recall:  1.0
+ * auc:  0.92889137738
+ * precision:  0.904109589041
+ * recall:  0.868421052632
 
 ### GaussianNB
- * auc:  0.862673990613
- * precision:  0.292119565217
- * recall:  0.959821428571
+ * auc:  0.927111662134
+ * precision:  0.788235294118
+ * recall:  0.881578947368

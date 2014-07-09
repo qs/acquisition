@@ -51,19 +51,21 @@ def print_metrics(X, Y, pred):
     print ' * recall: ', metrics.recall_score(y_bin, p_bin)
     print 
 
-def build_classifier(clf, X, Y):
+def build_classifier(clf, X_train, X_test, y_train, y_test):
     print '### ' + clf.__class__.__name__
-    clf.fit(X, Y)
+    clf.fit(X_train, y_train)
     pred = np.array([])
-    for x in X:
+    for x in X_test:
         pred = np.append(pred, bool(round(clf.predict(x))))
-    print_metrics(X, Y, pred)
+    print_metrics(X_test, y_test, pred)
 
 
 # preparing data
 data = load_data()
 X = np.array([[v for k, v in i.items() if k not in ['Result', 'Result date', 'Sector']] for i in data])
 Y = np.array([i['Result'] for i in data])
+
+X_train, X_test, y_train, y_test = cross_validation.train_test_split(X, Y, test_size=0.3, random_state=0)
 
 # classifier
 # http://scikit-learn.org/stable/auto_examples/plot_classifier_comparison.html
@@ -72,7 +74,6 @@ classifiers = [
     SGDClassifier(),
     KNeighborsClassifier(2),
     SVC(kernel="linear", C=0.025),
-    SVC(gamma=2, C=1),
     DecisionTreeClassifier(max_depth=5),
     RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1),
     AdaBoostClassifier(),
@@ -82,4 +83,4 @@ classifiers = [
 ]
 
 for classifier in classifiers:
-    build_classifier(classifier, X, Y)
+    build_classifier(classifier, X_train, X_test, y_train, y_test)
