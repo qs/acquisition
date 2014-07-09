@@ -14,19 +14,24 @@
  * recall:  0.802631578947
 
 ### DecisionTreeClassifier
- * auc:  0.898776195809
- * precision:  0.837837837838
+ * auc:  0.899536074228
+ * precision:  0.849315068493
  * recall:  0.815789473684
 
-### RandomForestClassifier
- * auc:  0.506578947368
- * precision:  1.0
- * recall:  0.0131578947368
-
-### AdaBoostClassifier
+### AdaBoostClassifier - base_estimator=DecisionTreeClassifier()
  * auc:  0.92889137738
  * precision:  0.904109589041
  * recall:  0.868421052632
+
+### AdaBoostClassifier - base_estimator=SVC(kernel="linear", C=0.025)
+ * auc:  0.887637977924
+ * precision:  0.772151898734
+ * recall:  0.802631578947
+
+### GradientBoostingClassifier - base_estimator=DecisionTreeClassifier()
+ * auc:  0.914973604223
+ * precision:  0.888888888889
+ * recall:  0.842105263158
 
 ### GaussianNB
  * auc:  0.927111662134
