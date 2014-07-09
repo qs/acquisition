@@ -1,10 +1,20 @@
 import numpy as np
-from sklearn import linear_model, cross_validation
+from sklearn import cross_validation
 import csv
 from decimal import Decimal
 from datetime import datetime
 from collections import Counter, OrderedDict
 from sklearn import metrics
+
+from sklearn.linear_model import SGDClassifier
+from sklearn.cross_validation import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
+from sklearn.naive_bayes import GaussianNB
+from sklearn.lda import LDA
+from sklearn.qda import QDA
 
 
 def load_data():
@@ -34,20 +44,21 @@ def load_data():
 def print_metrics(X, Y, pred):
     # metrics
     fpr, tpr, thresholds = metrics.roc_curve(Y, pred)
-    print 'auc: ', metrics.auc(fpr, tpr)
+    print ' * auc: ', metrics.auc(fpr, tpr)
     y_bin = np.array([bool(i) for i in Y])
     p_bin = np.array([bool(i) for i in pred])
-    print 'precision: ', metrics.precision_score(y_bin, p_bin)
-    print 'recall: ', metrics.recall_score(y_bin, p_bin)
+    print ' * precision: ', metrics.precision_score(y_bin, p_bin)
+    print ' * recall: ', metrics.recall_score(y_bin, p_bin)
     print 
 
 def build_classifier(clf, X, Y):
-    print clf.__class__.__name__
+    print '### ' + clf.__class__.__name__
     clf.fit(X, Y)
     pred = np.array([])
     for x in X:
-        pred = np.append(pred, bool(clf.predict(x)))
+        pred = np.append(pred, bool(round(clf.predict(x))))
     print_metrics(X, Y, pred)
+
 
 # preparing data
 data = load_data()
@@ -55,8 +66,20 @@ X = np.array([[v for k, v in i.items() if k not in ['Result', 'Result date', 'Se
 Y = np.array([i['Result'] for i in data])
 
 # classifier
-build_classifier(linear_model.SGDClassifier(), X, Y)
-#build_classifier(linear_model.Lasso(), X, Y)
-#build_classifier(linear_model.Ridge(), X, Y)
-#build_classifier(linear_model.LassoLars(), X, Y)
-#build_classifier(linear_model.BayesianRidge(), X, Y)
+# http://scikit-learn.org/stable/auto_examples/plot_classifier_comparison.html
+
+classifiers = [
+    SGDClassifier(),
+    KNeighborsClassifier(2),
+    SVC(kernel="linear", C=0.025),
+    SVC(gamma=2, C=1),
+    DecisionTreeClassifier(max_depth=5),
+    RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1),
+    AdaBoostClassifier(),
+    GaussianNB(),
+    #LDA(),
+    #QDA()
+]
+
+for classifier in classifiers:
+    build_classifier(classifier, X, Y)
