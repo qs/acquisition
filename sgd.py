@@ -1,8 +1,9 @@
 import numpy as np
-from sklearn import cross_validation
 import csv
 from decimal import Decimal
 from datetime import datetime
+import math
+
 from collections import Counter, OrderedDict
 from sklearn import metrics
 
@@ -41,6 +42,13 @@ def load_data():
             result_data.append(data_row)
     return result_data
 
+def compute_ndcg(ans, ideal):
+    #ans = sorted(ans, reverse=True)
+    #ideal = sorted(ideal, reverse=True)
+    ans_summ = sum([ (1.0 / math.log(p + 2, 2)) if v else 0 for p, v in enumerate(ans)])
+    ideal_summ = sum([ (1.0 / math.log(p + 2, 2)) if v else 0 for p, v in enumerate(ideal)])
+    return ans_summ / ideal_summ
+
 def print_metrics(X, Y, pred):
     # metrics
     fpr, tpr, thresholds = metrics.roc_curve(Y, pred)
@@ -49,6 +57,7 @@ def print_metrics(X, Y, pred):
     p_bin = np.array([bool(i) for i in pred])
     print ' * precision: ', metrics.precision_score(y_bin, p_bin)
     print ' * recall: ', metrics.recall_score(y_bin, p_bin)
+    print ' * ndcg: ', compute_ndcg(p_bin, y_bin)
     print 
 
 def build_classifier(clf, X_train, X_test, y_train, y_test):
@@ -65,7 +74,7 @@ data = load_data()
 X = np.array([[v for k, v in i.items() if k not in ['Result', 'Result date', 'Sector']] for i in data])
 Y = np.array([i['Result'] for i in data])
 
-X_train, X_test, y_train, y_test = cross_validation.train_test_split(X, Y, test_size=0.3, random_state=0)
+X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.3, random_state=0)
 
 # classifier
 # http://scikit-learn.org/stable/auto_examples/plot_classifier_comparison.html
