@@ -18,15 +18,22 @@ from sklearn.lda import LDA
 from sklearn.qda import QDA
 
 
-def load_data():
+def load_data(fname):
     lst_fin_names = ['Cash and cash equivalents', 'Inventories', 'Total Current Assets', 'Total Current Liabilities', 'Total Assets', 'Property, Plant and Equipment, Net', 'Goodwill', 'Short-Term Debt', 'Long-Term Debt', 'Net Debt', 'Total Liabilities', 'Depreciation  and amortization', 'CAPEX', 'Net Sales', 'Gross Margin', 'EBITDA', 'Dividend yield', 'Market Capitalization', 'Gross Income', 'Financial Costs', 'Net Income', 'Book Value', 'Free Cash Flow']
+    lst_all_names = lst_fin_names + ['EV', 'EV / EBITDA', 'EV / Sales', 'Net Debt / EBITDA', 'CAPEX / Net Sales', 'Interest Coverage ratio', 'Debt / Equity', 'Total Current Assets / Total Assets']
     lst_names = ["%s %s" % (f, y) for f in lst_fin_names for y in range(1994, 2015)]
     result_data = []
-    with open('Train_contest.csv', 'r') as file:
+    with open(fname, 'r') as file:
         for row in csv.reader(file):
             data = row[0].split("; ")
             data_row = OrderedDict(zip(lst_names, [float(i if i != 'NaN' else 0) for i in data[:-3]]))
-            # calculated values
+
+            # sector and result
+            data_row['Sector'] = data[-3]
+            data_row['Result'] = bool(int(data[-2]))
+            data_row['Result date'] = datetime.strptime(data[-1], "%d.%m.%Y") if data_row['Result'] else None
+
+            # calculated values recomented
             for y in range(1994, 2015):
                 data_row['EV %s' % y] = data_row['Market Capitalization %s' % y] + data_row['Net Debt %s' % y]
                 data_row['EV / EBITDA %s' % y] = (data_row['EV %s' % y] / data_row['EBITDA %s' % y]) if data_row['EBITDA %s' % y] != 0 else 0
@@ -36,15 +43,25 @@ def load_data():
                 data_row['Interest Coverage ratio %s' % y] = (data_row['Financial Costs %s' % y] / (data_row['EBITDA %s' % y] - data_row['Depreciation  and amortization %s' % y])) if (data_row['EBITDA %s' % y] - data_row['Depreciation  and amortization %s' % y]) != 0 else 0
                 data_row['Debt / Equity %s' % y] = ((data_row['Net Debt %s' % y] + data_row['Cash and cash equivalents %s' % y]) / (data_row['Total Assets %s' % y] - data_row['Total Liabilities %s' % y])) if (data_row['Total Assets %s' % y] - data_row['Total Liabilities %s' % y]) != 0 else 0
                 data_row['Total Current Assets / Total Assets %s' % y] = (data_row['Total Current Assets %s' % y] / data_row['Total Assets %s' % y]) if data_row['Total Assets %s' % y] != 0 else 0
-            data_row['Sector'] = data[-3]
-            data_row['Result'] = bool(int(data[-2]))
-            data_row['Result date'] = datetime.strptime(data[-1], "%d.%m.%Y") if data_row['Result'] else None
+            
+            # calculated values our
+            for name in lst_all_names:
+                for period in [2, 3, 5]:
+                    delta_name = 'Delta %s p:%s' % (name, period)
+                    if data_row['Result']:
+                        sold_year = data_row['Result date'].year
+                        delta_value = data_row['%s %s' % (name, sold_year)] - data_row['%s %s' % (name, sold_year - period)] \
+                                if '%s %s' % (name, sold_year - period) in data_row else 0
+                    else:
+                        delta_value = 0
+                    data_row[delta_name] = delta_value
+
             result_data.append(data_row)
     return result_data
 
 def compute_ndcg(ans, ideal):
-    #ans = sorted(ans, reverse=True)
-    #ideal = sorted(ideal, reverse=True)
+    ans = sorted(ans, reverse=True)
+    ideal = sorted(ideal, reverse=True)
     ans_summ = sum([ (1.0 / math.log(p + 2, 2)) if v else 0 for p, v in enumerate(ans)])
     ideal_summ = sum([ (1.0 / math.log(p + 2, 2)) if v else 0 for p, v in enumerate(ideal)])
     return ans_summ / ideal_summ
@@ -70,7 +87,7 @@ def build_classifier(clf, X_train, X_test, y_train, y_test):
 
 
 # preparing data
-data = load_data()
+data = load_data('Train_contest.csv')
 X = np.array([[v for k, v in i.items() if k not in ['Result', 'Result date', 'Sector']] for i in data])
 Y = np.array([i['Result'] for i in data])
 
@@ -81,13 +98,14 @@ X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.3, random_
 
 classifiers = [
     SGDClassifier(),
-    KNeighborsClassifier(2),
+    #KNeighborsClassifier(2),
     SVC(kernel="linear", C=0.025),
     DecisionTreeClassifier(max_depth=5),
     AdaBoostClassifier(),
-    AdaBoostClassifier(base_estimator=SVC(kernel="linear", C=0.025), algorithm='SAMME'),
+    AdaBoostClassifier(base_estimator=RandomForestClassifier()),
+    #AdaBoostClassifier(base_estimator=SVC(kernel="linear", C=0.025), algorithm='SAMME'),
     GradientBoostingClassifier(),
-    GaussianNB(),
+    #GaussianNB(),
 ]
 
 for classifier in classifiers:
