@@ -46,7 +46,7 @@ def load_data(fname):
             
             # calculated values our
             for name in lst_all_names:
-                for period in [2, 3, 5]:
+                for period in [1, 2, 3, 4, 5]:
                     delta_name = 'Delta %s p:%s' % (name, period)
                     if data_row['Result']:
                         sold_year = data_row['Result date'].year
@@ -60,29 +60,31 @@ def load_data(fname):
     return result_data
 
 def compute_ndcg(ans, ideal):
-    ans = sorted(ans, reverse=True)
-    ideal = sorted(ideal, reverse=True)
-    ans_summ = sum([ (1.0 / math.log(p + 2, 2)) if v else 0 for p, v in enumerate(ans)])
-    ideal_summ = sum([ (1.0 / math.log(p + 2, 2)) if v else 0 for p, v in enumerate(ideal)])
+    ans_t = np.array([i[1] for i in ans])
+    ideal_num = np.array([int(i) for i in ideal])
+
+    ans_srt = sorted(zip(ans_t, ideal_num), key=lambda x: x[0], reverse=True)
+    ideal_srt = sorted(ideal_num, reverse=True)
+    ans_summ = sum([ (1.0 / math.log(p + 2, 2)) if v[1] else 0 for p, v in enumerate(ans_srt)])
+    ideal_summ = sum([ (1.0 / math.log(p + 2, 2)) if v else 0 for p, v in enumerate(ideal_srt)])
+
     return ans_summ / ideal_summ
 
 def print_metrics(X, Y, pred):
     # metrics
-    fpr, tpr, thresholds = metrics.roc_curve(Y, pred)
+    pred_bool = np.array([True if t > f else False for f, t in pred])
+    fpr, tpr, thresholds = metrics.roc_curve(Y, pred_bool)
     print ' * auc: ', metrics.auc(fpr, tpr)
-    y_bin = np.array([bool(i) for i in Y])
-    p_bin = np.array([bool(i) for i in pred])
-    print ' * precision: ', metrics.precision_score(y_bin, p_bin)
-    print ' * recall: ', metrics.recall_score(y_bin, p_bin)
-    print ' * ndcg: ', compute_ndcg(p_bin, y_bin)
+    print ' * precision: ', metrics.precision_score(Y, pred_bool)
+    print ' * recall: ', metrics.recall_score(Y, pred_bool)
+    print ' * ndcg: ', compute_ndcg(pred, Y)
     print 
 
 def build_classifier(clf, X_train, X_test, y_train, y_test):
-    print '### ' + clf.__class__.__name__
+    print '### ' + clf.__class__.__name__, clf.base_estimator.__class__.__name__
     clf.fit(X_train, y_train)
-    pred = np.array([])
-    for x in X_test:
-        pred = np.append(pred, bool(round(clf.predict(x))))
+
+    pred = clf.predict_proba(X_test)
     print_metrics(X_test, y_test, pred)
 
 
@@ -97,14 +99,14 @@ X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.3, random_
 # http://scikit-learn.org/stable/auto_examples/plot_classifier_comparison.html
 
 classifiers = [
-    SGDClassifier(),
+    #SGDClassifier(),
     #KNeighborsClassifier(2),
-    SVC(kernel="linear", C=0.025),
-    DecisionTreeClassifier(max_depth=5),
+    #SVC(kernel="linear", C=0.025),
+    #DecisionTreeClassifier(max_depth=5),
     AdaBoostClassifier(),
     AdaBoostClassifier(base_estimator=RandomForestClassifier()),
     #AdaBoostClassifier(base_estimator=SVC(kernel="linear", C=0.025), algorithm='SAMME'),
-    GradientBoostingClassifier(),
+    #GradientBoostingClassifier(),
     #GaussianNB(),
 ]
 
