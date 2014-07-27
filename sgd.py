@@ -26,12 +26,19 @@ def load_data(fname):
     with open(fname, 'r') as file:
         for row in csv.reader(file):
             data = row[0].split("; ")
-            data_row = OrderedDict(zip(lst_names, [float(i if i != 'NaN' else 0) for i in data[:-3]]))
+            if len(data) == 486:
+                data_row = OrderedDict(zip(lst_names, [float(i if i != 'NaN' else 0) for i in data[:-3]]))
+            else:
+                data_row = OrderedDict(zip(lst_names, [float(i if i != 'NaN' else 0) for i in data[:-1]]))
 
             # sector and result
-            data_row['Sector'] = data[-3]
-            data_row['Result'] = bool(int(data[-2]))
-            data_row['Result date'] = datetime.strptime(data[-1], "%d.%m.%Y") if data_row['Result'] else None
+            
+            if len(data) == 486:
+                data_row['Sector'] = data[-3]
+                data_row['Result'] = bool(int(data[-2]))
+                data_row['Result date'] = datetime.strptime(data[-1], "%d.%m.%Y") if data_row['Result'] else None
+            else:
+                data_row['Sector'] = data[-1]
 
             # calculated values recomented
             for y in range(1994, 2015):
@@ -48,7 +55,7 @@ def load_data(fname):
             for name in lst_all_names:
                 for period in [1, 2, 3, 4, 5]:
                     delta_name = 'Delta %s p:%s' % (name, period)
-                    if data_row['Result']:
+                    if 'Result' in data_row and data_row['Result']:
                         sold_year = data_row['Result date'].year
                         delta_value = data_row['%s %s' % (name, sold_year)] - data_row['%s %s' % (name, sold_year - period)] \
                                 if '%s %s' % (name, sold_year - period) in data_row else 0
@@ -83,17 +90,17 @@ def print_metrics(X, Y, pred):
 def build_classifier(clf, X_train, X_test, y_train, y_test):
     print '### ' + clf.__class__.__name__, clf.base_estimator.__class__.__name__
     clf.fit(X_train, y_train)
-
-    pred = clf.predict_proba(X_test)
-    print_metrics(X_test, y_test, pred)
+    return clf
 
 
 # preparing data
 data = load_data('Train_contest.csv')
 X = np.array([[v for k, v in i.items() if k not in ['Result', 'Result date', 'Sector']] for i in data])
+#print len(X[0]), len(data[0])
+#exit()
 Y = np.array([i['Result'] for i in data])
 
-X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.3, random_state=0)
+X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.4, random_state=0)
 
 # classifier
 # http://scikit-learn.org/stable/auto_examples/plot_classifier_comparison.html
@@ -103,7 +110,7 @@ classifiers = [
     #KNeighborsClassifier(2),
     #SVC(kernel="linear", C=0.025),
     #DecisionTreeClassifier(max_depth=5),
-    AdaBoostClassifier(),
+    #AdaBoostClassifier(),
     AdaBoostClassifier(base_estimator=RandomForestClassifier()),
     #AdaBoostClassifier(base_estimator=SVC(kernel="linear", C=0.025), algorithm='SAMME'),
     #GradientBoostingClassifier(),
@@ -111,4 +118,14 @@ classifiers = [
 ]
 
 for classifier in classifiers:
-    build_classifier(classifier, X_train, X_test, y_train, y_test)
+    clf = build_classifier(classifier, X_train, X_test, y_train, y_test)
+    pred = clf.predict_proba(X_test)
+    print_metrics(X_test, y_test, pred)
+
+    data = load_data('Valid_contest.csv')
+    X = np.array([[v for k, v in i.items() if k not in ['Result', 'Result date', 'Sector']] for i in data])
+    pred = clf.predict_proba(X)
+    print pred
+    with open('Result.csv', 'w') as file:
+        for f, t in pred:
+            file.write("%s\n" % t)
