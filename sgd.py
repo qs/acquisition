@@ -8,7 +8,7 @@ from collections import Counter, OrderedDict
 from sklearn import metrics
 
 from sklearn.linear_model import SGDClassifier
-from sklearn.cross_validation import train_test_split
+from sklearn.cross_validation import train_test_split, cross_val_score, StratifiedKFold
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
@@ -16,6 +16,7 @@ from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, Gradien
 from sklearn.naive_bayes import GaussianNB
 from sklearn.lda import LDA
 from sklearn.qda import QDA
+from scipy import interp
 
 
 def load_data(fname):
@@ -60,7 +61,9 @@ def load_data(fname):
                         delta_value = data_row['%s %s' % (name, sold_year)] - data_row['%s %s' % (name, sold_year - period)] \
                                 if '%s %s' % (name, sold_year - period) in data_row else 0
                     else:
-                        delta_value = 0
+                        sold_year = 2014
+                        delta_value = data_row['%s %s' % (name, sold_year)] - data_row['%s %s' % (name, sold_year - period)] \
+                                if '%s %s' % (name, sold_year - period) in data_row else 0
                     data_row[delta_name] = delta_value
 
             result_data.append(data_row)
@@ -106,22 +109,33 @@ X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.4, random_
 # http://scikit-learn.org/stable/auto_examples/plot_classifier_comparison.html
 
 classifiers = [
-    #SGDClassifier(),
-    #KNeighborsClassifier(2),
-    #SVC(kernel="linear", C=0.025),
-    #DecisionTreeClassifier(max_depth=5),
-    #AdaBoostClassifier(),
     AdaBoostClassifier(base_estimator=RandomForestClassifier()),
-    #AdaBoostClassifier(base_estimator=SVC(kernel="linear", C=0.025), algorithm='SAMME'),
-    #GradientBoostingClassifier(),
-    #GaussianNB(),
 ]
 
 for classifier in classifiers:
     clf = build_classifier(classifier, X_train, X_test, y_train, y_test)
     pred = clf.predict_proba(X_test)
     print_metrics(X_test, y_test, pred)
+    #scores = cross_val_score(clf, X, Y, cv=5)
+    #print dir(scores)
+    cv = StratifiedKFold(Y, n_folds=6)
+    print cv
+    mean_tpr = 0.0
+    mean_fpr = np.linspace(0, 1, 100)
+    all_tpr = []
+    for i, (X_train, X_test) in enumerate(cv):
+        probas_ = classifier.fit(X[X_train], Y[X_train]).predict_proba(X[X_test])
+        fpr, tpr, thresholds = metrics.roc_curve(Y[X_test], probas_[:, 1])
+        mean_tpr += interp(mean_fpr, fpr, tpr)
+        mean_tpr[0] = 0.0
+        roc_auc = metrics.auc(fpr, tpr)
+        print 'roc_auc', roc_auc
 
+    mean_tpr /= len(cv)
+    mean_tpr[-1] = 1.0
+    mean_auc = metrics.auc(mean_fpr, mean_tpr)
+    print 'mean_auc', mean_auc
+    '''
     data = load_data('Valid_contest.csv')
     X = np.array([[v for k, v in i.items() if k not in ['Result', 'Result date', 'Sector']] for i in data])
     pred = clf.predict_proba(X)
@@ -129,3 +143,4 @@ for classifier in classifiers:
     with open('Result.csv', 'w') as file:
         for f, t in pred:
             file.write("%s\n" % t)
+    '''
