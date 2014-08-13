@@ -78,7 +78,7 @@ class Algo:
                 
                 # calculated values our
                 for name in lst_all_names:
-                    for period in [1, 2, 3, 4, 5]:
+                    for period in [1, 2, 3, 5]:
                         delta_name = 'Delta %s p:%s' % (name, period)
                         if 'Result' in data_row and data_row['Result']:
                             sold_year = data_row['Result date'].year
@@ -89,7 +89,7 @@ class Algo:
                             delta_value = data_row['%s %s' % (name, sold_year)] - data_row['%s %s' % (name, sold_year - period)] \
                                     if '%s %s' % (name, sold_year - period) in data_row else 0
                         data_row[delta_name] = delta_value
-
+                #data_row = OrderedDict(zip([(k, (1 if v > 0 else -1) * math.log(v + 1 if v > 0 else -v) if type(v) in (float, int) else v) for k, v in data_row.items()]))
                 result_data.append(data_row)
         return result_data
 
@@ -134,6 +134,13 @@ class Algo:
         Y = np.array([i['Result'] for i in data])
         return X, Y
 
+    def compute_result(self, dataset, clf):
+        Y = []
+        X = np.array([[v for k, v in i.items() if k not in ['Result', 'Result date', 'Sector']] for i in data])
+        for x in X:
+            Y.append(clf.predict(x))
+        return np.array(Y)
+
     @staticmethod
     def compute_ndcg(ans, ideal):
         ans_t = np.array([i[1] for i in ans])
@@ -155,12 +162,16 @@ if __name__ == "__main__":
     trainset, testset = algo.split_train_data(dataset)
     clf = algo.build_classifier(trainset, testset)
 
-    metricstats = algo.compute_metrics(testset, clf)
-    print metricstats
+    algo.compute_metrics(testset, clf)
+
+    dataset = algo.load_data(predict_file, 'result')
+    res = algo.compute_result(dataset, clf)
+    print res
+    '''
     exit()
 
     metricstats = algo.compute_cross_metrics(dataset, clf)
     print metricstats
 
-    dataset = algo.load_data()
-    algo.compute_result(dataset)
+    dataset = algo.load_data(predict_file)
+    algo.compute_result(dataset)'''
