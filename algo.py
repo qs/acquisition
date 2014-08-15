@@ -134,12 +134,17 @@ class Algo:
         Y = np.array([i['Result'] for i in data])
         return X, Y
 
-    def compute_result(self, dataset, clf):
+    def compute_result(self, data, clf):
         Y = []
         X = np.array([[v for k, v in i.items() if k not in ['Result', 'Result date', 'Sector']] for i in data])
         for x in X:
-            Y.append(clf.predict(x))
+            Y.append(clf.predict_proba(x)[0])
         return np.array(Y)
+
+    def save_result(self, file_path, result):
+        with open(file_path, 'w') as file_obj:
+            for i in result:
+                file_obj.write("%s\n" % i[1])
 
     @staticmethod
     def compute_ndcg(ans, ideal):
@@ -166,12 +171,5 @@ if __name__ == "__main__":
 
     dataset = algo.load_data(predict_file, 'result')
     res = algo.compute_result(dataset, clf)
+    algo.save_result('Result.csv', res)
     print res
-    '''
-    exit()
-
-    metricstats = algo.compute_cross_metrics(dataset, clf)
-    print metricstats
-
-    dataset = algo.load_data(predict_file)
-    algo.compute_result(dataset)'''
