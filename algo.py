@@ -10,6 +10,7 @@ import math
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, GradientBoostingClassifier
 from collections import Counter, OrderedDict
 from sklearn import metrics
+from sklearn import cross_validation
 
 
 '''
@@ -23,6 +24,28 @@ from sklearn import metrics
 class Algo:
     def load_data(self, file_path, data_type='train'):
         ''' loading data, compute deltas '''
+        cat_weiths = {
+            'Commercial Services': 11,
+             'Communications': 18,
+             'Consumer Durables': 1,
+             'Consumer Non-Durables': 10,
+             'Consumer Services': 14,
+             'Distribution Services': 12,
+             'Electronic Technology': 16,
+             'Energy Minerals': 9,
+             'Finance': 5,
+             'Health Services': 19,
+             'Health Technology': 13,
+             'Industrial Services': 6,
+             'Miscellaneous': 0,
+             'Non-Energy Minerals': 3,
+             'Process Industries': 7,
+             'Producer Manufacturing': 4,
+             'Retail Trade': 8,
+             'Technology Services': 15,
+             'Transportation': 2,
+             'Utilities': 17
+        }
         lst_fin_names = [
             'Cash and cash equivalents', 
             'Inventories', 
@@ -58,12 +81,12 @@ class Algo:
                 data = row[0].split("; ")
                 if data_type == 'train':
                     data_row = OrderedDict(zip(lst_names, [float(i if i != 'NaN' else 0) for i in data[:-3]]))
-                    data_row['Sector'] = data[-3]
+                    data_row['Sector'] = cat_weiths[data[-3]]
                     data_row['Result'] = bool(int(data[-2]))
                     data_row['Result date'] = datetime.strptime(data[-1], "%d.%m.%Y") if data_row['Result'] else None
                 else:
                     data_row = OrderedDict(zip(lst_names, [float(i if i != 'NaN' else 0) for i in data[:-1]]))
-                    data_row['Sector'] = data[-1]
+                    data_row['Sector'] = cat_weiths[data[-1]]
 
                 # calculated values recomented
                 for y in range(1994, 2015):
@@ -85,16 +108,17 @@ class Algo:
                             delta_value = data_row['%s %s' % (name, sold_year)] - data_row['%s %s' % (name, sold_year - period)] \
                                     if '%s %s' % (name, sold_year - period) in data_row else 0
                         else:
-                            sold_year = 2014
+                            #sold_year = 2014
                             delta_value = data_row['%s %s' % (name, sold_year)] - data_row['%s %s' % (name, sold_year - period)] \
                                     if '%s %s' % (name, sold_year - period) in data_row else 0
+                            delta_value = 0
                         data_row[delta_name] = delta_value
                 #data_row = OrderedDict(zip([(k, (1 if v > 0 else -1) * math.log(v + 1 if v > 0 else -v) if type(v) in (float, int) else v) for k, v in data_row.items()]))
                 result_data.append(data_row)
         return result_data
 
 
-    def split_train_data(self, dataset, train_pct=0.7):
+    def split_train_data(self, dataset, train_pct=0.8):
         ''' uniformly split data with sold/unsold status '''
         dataset = sorted(dataset, key=lambda x: x['Result'])
         testset = []
@@ -110,7 +134,7 @@ class Algo:
         ''' returns clf '''
         X_train, y_train = self._split_class_data(trainset)
         X_test, y_test = self._split_class_data(testset)
-        clf = AdaBoostClassifier(base_estimator=RandomForestClassifier())
+        clf = AdaBoostClassifier(base_estimator=RandomForestClassifier(), n_estimators=100)
         clf.fit(X_train, y_train)
         return clf
 
@@ -130,13 +154,13 @@ class Algo:
         ''' cross_validation '''
 
     def _split_class_data(self, data):
-        X = np.array([[v for k, v in i.items() if k not in ['Result', 'Result date', 'Sector']] for i in data])
+        X = np.array([[v for k, v in i.items() if k not in ['Result', 'Result date']] for i in data])
         Y = np.array([i['Result'] for i in data])
         return X, Y
 
     def compute_result(self, data, clf):
         Y = []
-        X = np.array([[v for k, v in i.items() if k not in ['Result', 'Result date', 'Sector']] for i in data])
+        X = np.array([[v for k, v in i.items() if k not in ['Result', 'Result date']] for i in data])
         for x in X:
             Y.append(clf.predict_proba(x)[0])
         return np.array(Y)
@@ -167,9 +191,12 @@ if __name__ == "__main__":
     trainset, testset = algo.split_train_data(dataset)
     clf = algo.build_classifier(trainset, testset)
 
+    trainset_kf = algo._split_class_data(trainset) 
+    testset_kf = algo._split_class_data(testset) 
+
     algo.compute_metrics(testset, clf)
 
     dataset = algo.load_data(predict_file, 'result')
     res = algo.compute_result(dataset, clf)
     algo.save_result('Result.csv', res)
-    print res
+    #print res
