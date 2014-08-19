@@ -95,10 +95,17 @@ class Algo:
                     data_row['EV / Sales %s' % y] = (data_row['EV %s' % y] / data_row['Net Sales %s' % y]) if data_row['Net Sales %s' % y] != 0 else 0
                     data_row['Net Debt / EBITDA %s' % y] = (data_row['Net Debt %s' % y] / data_row['EBITDA %s' % y]) if data_row['EBITDA %s' % y] != 0 else 0
                     data_row['CAPEX / Net Sales %s' % y] = (data_row['CAPEX %s' % y] / data_row['Net Sales %s' % y]) if data_row['Net Sales %s' % y] != 0 else 0
-                    data_row['Interest Coverage ratio %s' % y] = (data_row['Financial Costs %s' % y] / (data_row['EBITDA %s' % y] - data_row['Depreciation  and amortization %s' % y])) if (data_row['EBITDA %s' % y] - data_row['Depreciation  and amortization %s' % y]) != 0 else 0
+                    #data_row['Interest Coverage ratio %s' % y] = (data_row['Financial Costs %s' % y] / (data_row['EBITDA %s' % y] - data_row['Depreciation  and amortization %s' % y])) if (data_row['EBITDA %s' % y] - data_row['Depreciation  and amortization %s' % y]) != 0 else 0
                     data_row['Debt / Equity %s' % y] = ((data_row['Net Debt %s' % y] + data_row['Cash and cash equivalents %s' % y]) / (data_row['Total Assets %s' % y] - data_row['Total Liabilities %s' % y])) if (data_row['Total Assets %s' % y] - data_row['Total Liabilities %s' % y]) != 0 else 0
                     data_row['Total Current Assets / Total Assets %s' % y] = (data_row['Total Current Assets %s' % y] / data_row['Total Assets %s' % y]) if data_row['Total Assets %s' % y] != 0 else 0
                 
+                if 'Result' in data_row and data_row['Result']:
+                    sold_year = data_row['Result date'].year
+                else:
+                    sold_year = 2014
+
+                data_row['Year'] = sold_year
+
                 # calculated values our
                 for name in lst_all_names:
                     for period in [1, 2, 3, 5]:
@@ -159,13 +166,23 @@ class Algo:
         ''' cross_validation '''
 
     def _split_class_data(self, data):
-        X = np.array([[v for k, v in i.items() if k not in ['Result', 'Result date']] for i in data])
+        remove_cols = ["Financial Costs %s" % i for i in range(1994, 2015)]
+        remove_cols = ["Goodwill %s" % i for i in range(1994, 2015)]
+        remove_cols = ["Free Cash Flow %s" % i for i in range(1994, 2015)]
+        remove_cols = ["Dividend yield %s" % i for i in range(1994, 2015)]
+        remove_cols += ['Result', 'Result date']
+        X = np.array([[v for k, v in i.items() if k not in remove_cols] for i in data])
         Y = np.array([i['Result'] for i in data])
         return X, Y
 
     def compute_result(self, data, clf):
+        remove_cols = ["Financial Costs %s" % i for i in range(1994, 2015)]
+        remove_cols = ["Goodwill %s" % i for i in range(1994, 2015)]
+        remove_cols = ["Free Cash Flow %s" % i for i in range(1994, 2015)]
+        remove_cols = ["Dividend yield %s" % i for i in range(1994, 2015)]
+        remove_cols += ['Result', 'Result date']
         Y = []
-        X = np.array([[v for k, v in i.items() if k not in ['Result', 'Result date']] for i in data])
+        X = np.array([[v for k, v in i.items() if k not in remove_cols] for i in data])
         for x in X:
             Y.append(clf.predict_proba(x)[0])
         return np.array(Y)
