@@ -11,6 +11,7 @@ from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, Gradien
 from collections import Counter, OrderedDict
 from sklearn import metrics
 from sklearn import cross_validation
+from sklearn import linear_model
 
 
 '''
@@ -162,8 +163,11 @@ class Algo:
         print ' * ndcg: ', self.compute_ndcg(pred, y_test)
         print 
 
-    def compute_cross_metrics(self):
-        ''' cross_validation '''
+    def snp_load(self, fname):
+        data = open(fname).readlines()
+        data = [d.split(';') for d in data]
+        data = [(datetime.strptime(y, "%d.%m.%Y"), float(s[:-2].replace(',', '.'))) for y, s in data]
+        return data
 
     def _split_class_data(self, data):
         remove_cols = ["Financial Costs %s" % i for i in range(1994, 2015)]
