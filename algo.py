@@ -108,10 +108,10 @@ class Algo:
                             delta_value = data_row['%s %s' % (name, sold_year)] - data_row['%s %s' % (name, sold_year - period)] \
                                     if '%s %s' % (name, sold_year - period) in data_row else 0
                         else:
-                            #sold_year = 2014
+                            sold_year = 2014
                             delta_value = data_row['%s %s' % (name, sold_year)] - data_row['%s %s' % (name, sold_year - period)] \
                                     if '%s %s' % (name, sold_year - period) in data_row else 0
-                            delta_value = 0
+                            #delta_value = 0
                         data_row[delta_name] = delta_value
                 #data_row = OrderedDict(zip([(k, (1 if v > 0 else -1) * math.log(v + 1 if v > 0 else -v) if type(v) in (float, int) else v) for k, v in data_row.items()]))
                 result_data.append(data_row)
@@ -130,13 +130,18 @@ class Algo:
                 trainset.append(row)
         return trainset, testset
 
-    def build_classifier(self, trainset, testset):
+    def build_classifier(self, trainset):
         ''' returns clf '''
         X_train, y_train = self._split_class_data(trainset)
-        X_test, y_test = self._split_class_data(testset)
-        clf = AdaBoostClassifier(base_estimator=RandomForestClassifier(), n_estimators=100)
+        clf = AdaBoostClassifier(base_estimator=RandomForestClassifier(n_estimators=30), n_estimators=100)
         clf.fit(X_train, y_train)
         return clf
+
+    def cross_val(self, clf, dataset):
+        ''' cross validation '''
+        X_train, y_train = self._split_class_data(dataset)
+        scores = cross_validation.cross_val_score(clf, X_train, y_train, cv=10)
+        return scores
 
     def compute_metrics(self, testset, clf):
         ''' auc, precision, recall, ndcg '''
@@ -189,7 +194,10 @@ if __name__ == "__main__":
     
     dataset = algo.load_data(train_file)
     trainset, testset = algo.split_train_data(dataset)
-    clf = algo.build_classifier(trainset, testset)
+    clf = algo.build_classifier(dataset)
+
+    res = algo.cross_val(clf, dataset)
+    print res, dir(res)
 
     trainset_kf = algo._split_class_data(trainset) 
     testset_kf = algo._split_class_data(testset) 
