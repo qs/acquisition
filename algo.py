@@ -122,7 +122,9 @@ class Algo:
                             #delta_value = 0
                         data_row[delta_name] = delta_value
                 for i in lst_fin_names:
-                    data_row['%s (var)' % i] = np.var([v for k, v in data_row.items() if i in k])
+                    vals = [v for k, v in data_row.items() if i in k]
+                    data_row['%s (var)' % i] = np.var(vals)
+                    data_row['%s (sharpe)' % i] =  np.sqrt(len(vals)) * np.mean(vals) / np.std(vals)
                 for i in lst_names:
                     data_row.pop(i)
                 result_data.append(data_row)
