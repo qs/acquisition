@@ -121,7 +121,10 @@ class Algo:
                                     if '%s %s' % (name, sold_year - period) in data_row else 0
                             #delta_value = 0
                         data_row[delta_name] = delta_value
-                #data_row = OrderedDict(zip([(k, (1 if v > 0 else -1) * math.log(v + 1 if v > 0 else -v) if type(v) in (float, int) else v) for k, v in data_row.items()]))
+                for i in lst_fin_names:
+                    data_row['%s (var)' % i] = np.var([v for k, v in data_row.items() if i in k])
+                for i in lst_names:
+                    data_row.pop(i)
                 result_data.append(data_row)
         return result_data
 
